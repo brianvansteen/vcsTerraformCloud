@@ -119,7 +119,14 @@ resource "aws_instance" "my_west_server" {
   }
 }
 
-
+resource "aws_instance" "default_server" {
+  ami           = "ami-0fe630eb857a6ec83"
+  provider = aws
+  instance_type = "t2.small"
+  tags = {
+    Name = "RHEL9"
+  }
+}
 
 
 
