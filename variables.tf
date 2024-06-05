@@ -1,5 +1,5 @@
 variable "instance_type" {
-  type = string
+  type    = string
   default = "t2.micro"
 }
 
@@ -8,5 +8,5 @@ variable "vpc_id" {
 }
 
 variable "public_key" {
-    type = string
+  type = string
 }

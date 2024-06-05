@@ -1,4 +1,11 @@
 terraform {
+  backend "remote" {
+    hostname     = "app.terraform.io"
+    organization = "Daiqlos"
+    workspaces {
+      name = "vcsTerraformCloud"
+    }
+  }
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -9,15 +16,15 @@ terraform {
 }
 
 provider "aws" {
-  profile = "default"
-  region  = "us-east-2"
-  alias   = "east"
+  # profile = "default"
+  region = "us-east-2"
+  alias  = "east"
 }
 
 provider "aws" {
-  profile = "default"
-  region  = "us-west-1"
-  alias   = "west"
+  # profile = "default"
+  region = "us-west-1"
+  alias  = "west"
 }
 
 locals {
@@ -35,6 +42,33 @@ data "aws_vpc" "main" { # data sources defined outside of Terraform
   id = "vpc-da5530bc"
 }
 
+
+
+resource "aws_security_group" "inbound" {
+  name = "security_group"
+  # vpc_id = data.aws_vpc.main.id
+  vpc_id = var.vpc_id
+  dynamic "ingress" {
+    for_each = local.ingress_rules
+    content {
+      description      = ingress.value.description
+      from_port        = ingress.value.port
+      to_port          = ingress.value.port
+      protocol         = "tcp"
+      cidr_blocks      = ["0.0.0.0/0"]
+      ipv6_cidr_blocks = []
+      prefix_list_ids  = []
+      security_groups  = ["sg-a77e10db"]
+      self             = false
+    }
+  }
+
+}
+
+resource "aws_key_pair" "deployer" {
+  key_name   = "deployer_key"
+  public_key = var.public_key
+}
 
 data "aws_ami" "east-amazon-linux-2" {
   provider    = aws.east
@@ -66,7 +100,7 @@ data "aws_ami" "west-amazon-linux-2" {
 
 resource "aws_instance" "my_east_server" {
   ami           = data.aws_ami.east-amazon-linux-2.id
-  instance_type = var.instance_type
+  instance_type = "t2.micro"
   provider      = aws.east
   tags = {
     Name = "Server-East"
@@ -75,7 +109,7 @@ resource "aws_instance" "my_east_server" {
 
 resource "aws_instance" "my_west_server" {
   ami           = data.aws_ami.west-amazon-linux-2.id
-  instance_type = var.instance_type
+  instance_type = "t2.micro"
   provider      = aws.west
   tags = {
     Name = "Server-East"
@@ -84,40 +118,6 @@ resource "aws_instance" "my_west_server" {
     prevent_destroy = false
   }
 }
-
-resource "aws_instance" "importedServer" {
-  ami           = data.aws_ami.west-amazon-linux-2.id
-  instance_type = var.instance_type
-  provider      = aws.west
-}
-
-resource "aws_security_group" "inbound" {
-  name = "security_group"
-  # vpc_id = data.aws_vpc.main.id
-  vpc_id = var.vpc_id
-  dynamic "ingress" {
-    for_each = local.ingress_rules
-    content {
-      description      = ingress.value.description
-      from_port        = ingress.value.port
-      to_port          = ingress.value.port
-      protocol         = "tcp"
-      cidr_blocks      = ["0.0.0.0/0"]
-      ipv6_cidr_blocks = []
-      prefix_list_ids  = []
-      security_groups  = ["sg-a77e10db"]
-      self             = false
-    }
-  }
-
-}
-
-resource "aws_key_pair" "deployer" {
-  key_name   = "deployer_key"
-  public_key = var.public_key
-}
-
-
 
 
 
